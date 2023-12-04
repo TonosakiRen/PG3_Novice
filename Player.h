@@ -7,37 +7,21 @@
 class Player
 {
 public:
-	void Initialize();
+	void Initialize(Vector3 pos);
 	void Update();
 	void Draw();
 
-	bool IsDead() const { return isDead_; }
 	Vector3 GetPos() { return position_; }
-
-	struct Bullet {
-		Vector3 position_;
-		bool isDead_;
-	};
-	
-	std::list<std::unique_ptr<Bullet>>& GetBullets() {
-		return bullets_;
+	void SetPos(Vector3 pos) {
+		position_ = pos;
 	}
-
-private:
-	void Move();
-	void Fire();
-	void BulletUpdate();
-	void PopBullet();
+	void SetColor(int color) {
+		color_ = color;
+	}
 private:
 	//座標
 	Vector3 position_;
-	//デスフラグ
-	bool isDead_ = false;
-
-	//弾
-	std::list<std::unique_ptr<Bullet>> bullets_;
-
-	//弾クールタイム
-	int bulletCoolTime_ = 0;
+	//色
+	int color_;
 };
 

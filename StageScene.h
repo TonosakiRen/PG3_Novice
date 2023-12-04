@@ -1,14 +1,15 @@
 #pragma once
+#include "WinApp.h"
 #include "IScene.h"
 
 #include <memory>
 #include <vector>
 #include <list>
 
-#include "Player.h"
-#include "Enemy.h"
-#include "EnemyBullet.h"
-#include "EnemyBulletManager.h"
+class Player;
+class Select;
+class Command;
+class InputHandle;
 
 class StageScene :
     public IScene
@@ -18,19 +19,19 @@ public:
     void Init() override;
     void Update() override;
     void Draw() override;
+
+    static const int kChipSize = 30;
+
+    static const int kHeightNum = int(WinApp::kWindowHeight / kChipSize);
+    static const int kWidthNum = int(WinApp::kWindowWidth / kChipSize);
+
 private:
-    void EnemySpawn(Vector3 position);
-    void CheckAllCollision();
+   
 private:
     //自キャラ
-    std::unique_ptr<Player> player_ = nullptr;
-    //Enemy
-    std::list<std::unique_ptr<Enemy>> enemies_;
-    //EnemyBullets
-    std::unique_ptr<EnemyBulletManager> enemyBulletManager_;
-    //Enemyの数
-    uint32_t enemyNum_ = 0;
-    //Enemyが出現するフレーム
-    uint32_t enemySpawnFrame_ = 0;
+    std::vector<std::unique_ptr<Player>> players_;
+    std::unique_ptr<Select> select_ = nullptr;
+    Command* command_ = nullptr;
+    std::unique_ptr<InputHandle> inputHandler_ = nullptr;
 };
 

@@ -1,102 +1,78 @@
 #include "StageScene.h"
 #include "Novice.h"
 #include "KeyInput.h"
+#include "WinApp.h"
+
+#include "Player.h"
+#include "Select.h"
+#include "Command.h"
+#include "InputHandle.h"
 
 StageScene::StageScene()
 {
-	player_ = std::make_unique<Player>();
-	enemyBulletManager_ = std::make_unique<EnemyBulletManager>();
+	players_.resize(4);
+
+	for (auto& player : players_) {
+		player = std::make_unique<Player>();
+	}
+
 }
 
 void StageScene::Init()
 {
-	player_->Initialize();	
-	enemies_.clear();
-	enemyBulletManager_->Initialize();
-	Enemy::deadEnemyNum = 0;
+	for (int i = 0; auto & player : players_) {
+		player->Initialize(Vector3{float(i),0,0});
+		i++;
+	}
+	select_ = std::make_unique<Select>();
+	select_->SetPlayers(&players_);
+	inputHandler_ = std::make_unique<InputHandle>();
+	inputHandler_->AssignMoveDownCommandToTriggerKeyS();
+	inputHandler_->AssignMoveUpCommandToTriggerKeyW();
+	inputHandler_->AssignMoveLeftCommandToTriggerKeyA();
+	inputHandler_->AssignMoveRightCommandToTriggerKeyD();
+
 }
 
 void StageScene::Update()
 {
+
+	command_ = inputHandler_->HandleInput();
+
+	if (this->command_) {
+		command_->Exec(select_.get());
+	}
+
 	//自キャラ更新
-	player_->Update();
-
-	//敵出現
-	const int spawnInterval = 30;
-	if (enemySpawnFrame_ <= 0) {
-		enemySpawnFrame_ = spawnInterval;
-		EnemySpawn({ 30.0f,60.0f,0.0f });
+	for (auto& player : players_) {
+		player->Update();
 	}
-	enemySpawnFrame_--;
-
-	//敵更新
-	for (const std::unique_ptr<Enemy>& enemy : enemies_) {
-		enemy->Update();
-	}
-
-	// デスフラグの立った敵を削除
-	enemies_.remove_if([](std::unique_ptr<Enemy>& enemy) {
-		if (enemy->IsDead()) {
-			return true;
-		}
-		return false;
-	});
-
-	//敵弾更新
-	enemyBulletManager_->Update();
-
-	//当たり判定
-	CheckAllCollision();
-
-	if (Enemy::deadEnemyNum >= 10) {
-		ChangeScene(Clear);
-	}
-	
+	select_->Update();
 }
 
 void StageScene::Draw()
 {
+
+	//横線
+	for (int i = 0; i < kHeightNum; i++) {
+		int y = (i + 1) * kChipSize;
+		Novice::DrawLine(0, y, WinApp::kWindowWidth, y,WHITE);
+	}
+
+	//縦線
+	for (int i = 0; i < kWidthNum; i++) {
+		int x = (i + 1) * kChipSize;
+		Novice::DrawLine(x, 0, x, WinApp::kWindowHeight, WHITE);
+	}
+
+	select_->Draw();
 	Novice::ScreenPrintf(0, 0, "Stage");
 
 	// 自キャラ描画
-	player_->Draw();
-	//敵描画
-	for (const std::unique_ptr<Enemy>& enemy : enemies_) {
-		enemy->Draw();
+	for (auto& player : players_) {
+		player->Draw();
 	}
-
-	enemyBulletManager_->Draw();
 	
 }
 
-void StageScene::EnemySpawn(Vector3 position)
-{
-	// 敵を生成、初期化
-	std::unique_ptr<Enemy> newEnemy = std::make_unique<Enemy>();
-	// 敵キャラに自キャラのアドレスを渡す
-	newEnemy->Initialize(position, enemyBulletManager_.get());
-	// 敵を登録する
-	enemies_.push_back(std::move(newEnemy));
-}
-
-void StageScene::CheckAllCollision()
-{
-	//敵当たり判定
-	for (const std::unique_ptr<Enemy>& enemy : enemies_) {
-		for (const std::unique_ptr<Player::Bullet>& playerBullet : player_->GetBullets()) {
-			float length = Length(enemy->GetPos() - playerBullet->position_);
-			if (length <= 15) {
-				enemy->OnCollision();
-			}
-		}
-	}
-
-	//自機当たり判定
-	for (const std::unique_ptr<EnemyBullet>& enemyBullet : enemyBulletManager_->GetEnemyBullets()) {
-		float length = Length(enemyBullet->GetPos() - player_->GetPos());
-		if (length <= 15) {
-			enemyBullet->OnCollision();
-		}
-	}
-}
 
